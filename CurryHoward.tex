@@ -1,0 +1,1024 @@
+% Created 2022-05-11 mer. 14:54
+% Intended LaTeX compiler: pdflatex
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{curryhoward}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\newcommand{\Coq}{\textsc{Coq}}
+\setcounter{secnumdepth}{3}
+\author{F. BEN MENA}
+\date{\textit{[2022-05-11 mer.]}}
+\title{Présentation de la correspondance de Curry-Howard}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\newpage
+
+
+\section{Introduction}
+\label{sec:org395ce7b}
+\begin{flushright}
+«The proof of the pudding is in the eating.»
+
+--- Proverbe anglais.
+\end{flushright}
+
+\subsection{La barrière d'entrée}
+\label{sec:org9b94410}
+La raison d'être de cette présentation est double.  Il s'agit de montrer que les frontières que l'on pense
+étanches entre mathématique et informatique forment une représentation impropre du payasage dans lequel ces
+deux disciplines évoluent.  Les échanges mutuels entre elles sont évidents depuis les travaux fondateurs de
+Kurt Gödel, Alonzo Church, Gerhard Gentzen et Alan Turing.  Ces travaux d'une synchronicité remarquable sont
+publiés, indépendamment les uns des autres, en un laps de temps de moins d'une décennie (autour des années
+1930).  Depuis, ils ont été poursuivis, enrichis et ont conduit à quelques résultats remarquables.  L'un
+d'entre eux est aujourd'hui connu sous le nom de correspondance de Curry-Howard.  Aborder ce résultat
+lorsqu'on a une formation en «mathématiques fondamentales» a quelque chose de déroutant.  Nos
+représentations, nous amènent à penser, et parfois à enseigner, qu'il existe une dichotomie nette entre
+calcul et raisonnement ce que, d'une certaine manière, dément cette correspondance de Curry-Howard.
+
+Mais la deuxième raison d'être de cette présentation n'est pas épistémologique.  Sans même aborder la
+démonstration formelle du principal résultat théorique, elle va se limiter à donner un aperçu de ses
+conséquences.  Avec le souci d'abaisser la barrière d'entrée dans un cadre théorique différent de celui bien
+connu de la théorie des ensembles.  Nous allons faire des mathématiques et de l'informatique --- on ne verra
+pas de frontière tangible --- sur des objets que nous connaissons bien.
+
+\subsection{La notion de type}
+\label{sec:org2f77237}
+Considérons la notion de \emph{type} en informatique.  Elle est conçue pour permettre d'organiser et de classer
+les données.  Chaque langage de programmation présente divers types prédéfinis ainsi que des moyens
+d'étendre les types existants.  Partons d'un problème parfaitement banal et construisons en \emph{Coq} un type
+destiné à travailler avec les jours de la semaine.  Voici ce que l'on peut écrire:
+
+\begin{coq}[]
+Inductive jour_semaine : Set :=
+  | Dimanche
+  | Lundi
+  | Mardi
+  | Mercredi
+  | Jeudi
+  | Vendredi
+  | Samedi.
+
+Definition jour_suivant (jour : jour_semaine) : jour_semaine := match jour with
+  | Dimanche => Lundi
+  | Lundi => Mardi
+  | Mardi => Mercredi
+  | Mercredi => Jeudi
+  | Jeudi => Vendredi
+  | Vendredi => Samedi
+  | Samedi => Dimanche
+end.
+
+Compute (jour_suivant Dimanche).
+\end{coq}
+
+Avec cet extrait nous disposons:
+\begin{itemize}
+\item d'un nouveau type de données, nommé \C{jour_semaine};
+\item d'une fonction qui permet le calcul du jour qui succède à un jour donné;
+\item d'un moyen d'appeler la fonction précédente sur une valeur du type idoine.
+\end{itemize}
+
+Dès lors que l'on peut construire des types de données, des fonctions opérant sur les valeurs de ce type et
+que l'on peut appeler ces fonctions, on se dit que ce logiciel présente certaines caractéristiques d'un
+langage de programmation.  \emph{Coq} est bien un langage de programmation, mais il n'est pas que cela.
+
+Considérons le code suivant:
+
+\begin{coq}[]
+Definition est_premier (n : nat) : Prop :=
+  forall (n1 n2 : nat), n = n1 * n2 -> (n1 = 1 /\ n2 = n) \/ (n1 = n /\ n2 = 1).
+\end{coq}
+
+où les symboles \(\wedge, \vee\) représentent les connecteurs propositionnels de la conjonction et de la
+disjonction.  Ce qu'illustre cet exemple, c'est que ce langage est assez expressif pour traduire un très
+vaste domaine des énoncés mathématiques.  Comme l'indique la partie comprise entre l'identifiant et le
+symbole \texttt{:=}, le type de cette fonction est \C{nat -> Prop}, autrement dit, il s'agit d'un
+\emph{prédicat} sur les entiers.
+
+\section{Un survol de \emph{Coq}}
+\label{sec:org02573f6}
+Sans entrer dans les détails de la programmation fonctionnelle, on va en indiquer les points saillants.
+
+\subsection{De la nature des types de données}
+\label{sec:org6218efd}
+Introduisons des types de données simples.  Les types de données sont des éléments qui relèvent de
+\emph{constructions inductives}.  Contrairement à la majorité des langages de programmation, les types de
+données en \emph{Coq} ne sont pas transparents.  Dès lors, il est non seulement loisible de se pencher sur
+la construction de ces types mais il est même presque indispensable de le faire.
+
+Le type booléen comporte deux \emph{constructeurs} et deux valeurs.  Le type des entiers naturels
+comporte deux \emph{constructeurs} et une infinité de valeurs.
+
+\begin{coq}[]
+Inductive bool : Set :=
+  | true
+  | false.
+
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
+\end{coq}
+
+On reconnait dans le type des entiers naturel la construction due à Peano.  Un entier naturel est soit \(0\)
+soit le \emph{successeur} d'un autre entier.  Le constructeur \C{S} est cette fonction successeur.  Toutes les
+fonctions qui opèrent sur les valeurs de l'un de ces deux types prennent appui ces constructions et sur rien
+d'autre.  Avant d'aborder des exemples de fonctions sur sur les entiers et les booléens, abordons deux types
+supplémentaires dont il sera question plus loin:
+
+\begin{coq}[]
+Inductive dessert : Set := pudding.
+Inductive vide : Set := .
+\end{coq}
+
+Le type \C{dessert} admet un unique constructeur qui est \C{pudding}, le type \C{vide} n'admet aucun
+constructeur. Cependant, ce dernier type est parfaitement construit, bien qu'aucune valeur ne puisse être
+crée avec ce type.
+
+\subsubsection{La stratification des types}
+\label{sec:orgc04de78}
+Dans les exemples introductifs, que ce soit pour la construction \C{jour_semaine} ou \C{est_premier} on a
+rencontré les mots-clés \C{Set} et \C{Prop}.  Le premier défini la \emph{sorte des spécifications} et le second la
+\emph{sorte des propositions}.  Dans \emph{Coq} le langage de formation des termes et des types s'appelle \emph{Gallina}.
+
+considérons le type \C{nat} des entiers naturels.  Il s'agit également d'un terme dont le type est \C{Set}.
+De la même manière, lorsque \C{P} une variable propositionnelle, son type est \C{Prop}.  Dans le langage
+\emph{Gallina}, en tant que termes, \C{Set} et \C{Prop} ont un type qui est \C{Type}.  À son tour, le terme
+\C{Type} admet un type qui est \C{Type}.  Cette situation n'est pas sans rappeler le paradoxe de la théorie
+des ensembles lorsque l'on tente de définir l'ensemble de tous les ensembles (paradoxe attribué à
+B. Russel).  En réalité, il existe une hiérarchie de types bien que l'index propre à chaque niveau
+hiérarchique ne soit pas explicitement affiché.  Ainsi \C{Set} et \C{Prop} sont des termes dont le type a
+pour index \C{Type@2}.  Le type ce dernier terme a pour index \C{Type@3}, \emph{etc}.
+
+Revenons aux exemples précités, et explicitons le type de certains termes.  La fonction
+\C{jour_suivant} est du type \C{jour_semaine -> jour_semaine} et \C{jour_semaine} est du type \C{Set}.
+Quel est donc le type du terme suivant: \C{jour_semaine -> jour_semaine}?  La réponse est \C{Set}.
+
+De même, au sein de la construction de la fonction \C{est_premier}, les constituants \C{n = n1 * n2},
+\C{n1 = 1}, \ldots{}  sont des termes dont le type est \C{Prop}.  Le terme qui désigne l'implication (qui est
+également le terme quantifié) est également du type \C{Prop}.
+
+Ainsi les sortes \C{Set} et \C{Prop} revêtent un caractère de stabilité pour les fonctions construites à
+partir de termes typés dans \C{Set} et \C{Prop} respectivement.  Pour insister sur ce point indiquons que le
+terme \C{nat -> nat} est de type \C{Set} et que le terme \C{P -> Q}, avec \C{P Q : Prop}, est de type
+\C{Prop}.
+
+
+\subsection{De la nature des fonctions}
+\label{sec:org157b72a}
+\subsubsection{Fonctions de type flèche}
+\label{sec:org7bd7ccf}
+Passons aux fonctions définies sur des termes dont les types sont \C{nat} ou \C{bool}.  Comme souvent en
+programmation fonctionnelle, elles sont construites selon un mécanisme de \emph{filtrage} sur les constructeurs.
+Pour illustrer cela, nous reproduisons le code des fonctions définissant la négation, la conjonction et la
+disjonction booléennes.
+
+\begin{coq}[]
+Definition negation (b : bool) : bool :=
+  match b with
+  | true => false
+  | false => true.
+  end.
+
+Definition conjonction (b1 b2 : bool) : bool :=
+  match b1, b2 with
+  | true, true => true
+  | _, _ => false
+  end.
+
+Definition disjonction (b1 b2 : bool) : bool :=
+  match b1, b2 with
+  | false, false => false
+  | _, _ => true
+  end.
+\end{coq}
+
+La négation est une fonction de type \C{bool -> bool}.  La conjonction et la disjonction booléennes sont de
+type \C{bool -> bool -> bool}.  Le caractère souligné \C{\_} signifie que l'on ne prend pas en compte la
+variable substituée par ce caractère.
+
+L'addition et la multiplication sur les entiers naturels suivent exactement la même idée.  La seule
+différence tient au caractère récursif de chacune de ces fonctions qui impose de remplacer le mot-clé
+\C{Definition} par le mot-clé \C{Fixpoint} par lequel \emph{Coq} s'assure de la terminaison de ces fonctions.  Au
+passage, introduisons des simplifications syntaxiques: \(0\) remplace le constructeur \C{O} et lorsque \C{n}
+est un entier naturel, son successeur est noté \C{n.+1} (aucun espace entre l'identificateur et la notation
+suffixe \C{.+1}).  Le successeur du successeur est noté \C{n.+2}, \emph{etc.} jusqu'à \C{n.+5}.
+
+\begin{coq}[]
+Fixpoint addn (n1 n2 : nat) : nat :=
+  match n1 with
+  | 0 => n2
+  | n'.+1 => (addn n' n2).+1
+  end.
+
+Fixpoint muln (n1 n2 : nat) : nat :=
+  match n1 with
+  | 0 => 0
+  | n'.+1 => n' + (muln n' n2)
+  end.
+\end{coq}
+
+L'addition et la multiplication des entiers sont des fonctions de type \C{nat -> nat -> nat}.
+
+La notation \C{(fun a:A => e)} construit expressément une fonction anonyme qui renvoie le terme \C{e} à
+partir de l'argument \C{a:A}.  Les notations mathématiques propres à la théorie ensembliste nous font écrire
+de manière analogue \(a\in A \mapsto e\) (l'expression \(e\) dépend de la variable \(a\)).
+
+De plus, la flèche est associative à droite.  Ainsi \C{A -> B -> C} s'entend comme \C{A -> (B -> C)}.  Dès
+lors, cette fonction qui prend deux arguments s'identifie à une fonction qui, à partir de la donnée du
+premier argument, renvoie une fonction.  Au niveau de l'application, pour une telle fonction \C{f}, il n'y
+pas de différence entre \C{(f a b)} et \C{((f a) b)}.
+
+Bien que la notion de produit cartésien de types existe, on privilégie la forme \C{A -> B -> C} pour la
+construction d'une fonction à deux arguments à la forme qui opère sur un couple de valeurs, que l'on note
+habituellement \(f : A \times B \longrightarrow C\).  La première forme est dite \emph{curryfiée}
+(sans que cela concerne le domaine des épices\ldots{}).
+
+Par la suite, sauf mention explicite du contraire, les notations infixes \C{+} et \C{*} désigneront
+l'addition et la multiplication sur les entiers.  De même les notations infixes \C{&&}, \C{||} désigneront
+respectivement la conjonction et la disjonction booléennes.  La notation préfixe \C{\~\~} servira à la
+négation booléenne.  Une autre simplification syntaxique s'applique aux situations où le filtrage est
+associé à un constructeur par défaut.  Ainsi, les fonctions d'addition et de multiplication auraient pu être
+écrites ainsi:
+
+\begin{coq}[]
+Fixpoint addn (n1 n2 : nat) : nat :=
+  if n1 is n'.+1 then (addn n' n2).+1 else n2.
+
+Fixpoint muln (n1 n2 : nat) : nat :=
+  if n1 is n'.+1 then n' + (muln n' n2) else 0.
+\end{coq}
+
+
+\subsubsection{Fonctions de type dépendant}
+\label{sec:org357fd16}
+Les fonctions en \emph{Coq} n'ont pas nécessairement un type de la forme \C{A -> B}.  Il arrive que le type de la
+valeur renvoyée par la fonction \emph{dépende de la valeur} de l'argument appliqué à la fonction.  Soit \C{f} une
+fonction.  On considère \C{B} le type du terme \C{(f a)}, lequel dépend de la \emph{valeur} de \C{a} alors, le
+type de la fonction est noté: \C{forall x:A, B}.  Considérons un exemple simple:
+
+\begin{coq}[]
+Definition PP := fun n => if n is 0 then dessert else nat.
+
+Definition f1 := fun (n : nat) =>
+  match n return (PP n) with
+  | 0 => pudding
+  | _ => n
+  end.
+\end{coq}
+
+Pour obtenir le type d'un terme on s'appuie sur la commande \C{Check}.
+
+\begin{coq-left}{name=a-trouver}{}
+Check addn.
+Check PP.
+Check f1.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+: nat -> nat -> nat.
+: nat -> Set.
+: forall n : nat, PP n
+\end{coqout-right}
+
+Si on se reprend les constructions des termes \C{nat} et \C{dessert} alors on observe que ces termes sont du
+type \C{Set}.  Les deux premières fonctions ne sont pas de type dépendant, elles sont du type flèche:
+\C{->}.  En revanche, la troisième fonction, \C{f1}, est de type dépendant, elle apparait comme une
+quantification universelle qui traduit que pour tout entier \(n\), \C{f1 n} est du type \C{PP n}.
+
+Pour obtenir le calcul produit par une fonction on s'appuie sur la commande \C{Compute}.
+
+\begin{coq-left}{name=a-trouver}{}
+Compute addn 3 5.
+Compute PP 0.
+Compute PP 4.
+Compute f1 0.
+Compute f1 1.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+8 : nat
+dessert : Set
+nat : Set
+pudding : PP 0
+1 : PP 1
+\end{coqout-right}
+
+Allons plus loin et construisons une fonction dont le type serait \C{forall n : nat, PP n -> PP n.+1}.  Par
+exemple:
+
+\begin{coq}[]
+Definition f2 : forall n : nat, PP n -> PP n.+1 := fun (n : nat) =>
+   match n return (PP n -> PP n.+1) with
+   | 0 => fun _ => 1
+   | n'.+1 => fun _ => n'.+2
+   end.
+\end{coq}
+
+On observe les résultat suivants:
+
+\begin{coq-left}{name=a-trouver}{}
+Check f2.
+Check f2 (n:=3).
+Compute f2 (n:=3) 3.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+: forall n : nat, PP n -> PP n.+1
+: PP 3 -> PP 4
+= 4 : PP 4
+\end{coqout-right}
+
+Essayons d'aller encore un peu plus loin et construisons une fonction qui prend deux arguments, l'un du type
+\C{PP 0}, l'autre du type \C{forall n : nat, PP n -> PP n.+1} et dont le type de la valeur de retour est
+\C{forall n : nat, PP n}.
+
+\begin{coq}[]
+Definition f3 : (PP 0) -> (forall n : nat, PP n -> PP n.+1) -> forall n : nat, PP n :=
+  fun (f : PP 0) (ff: forall n : nat, PP n -> PP n.+1) =>
+    fix F (n : nat) : (PP n) :=
+      match n return (PP n) with
+      | 0 => f
+      | n'.+1 => ff n' (F n')
+      end.
+\end{coq}
+
+Ne sommes-nous pas arriver à quelque chose de bien connu?  En réalité cette fonction, ou sa généralisation,
+est définie en \emph{Coq} et se nomme \C{nat_rec}.  En effet:
+
+\begin{coq-left}{name=a-trouver}{}
+Check nat_rec.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+: forall P : nat -> Set, P 0 ->
+  (forall n : nat, P n -> P n.+1) ->
+  forall n : nat, P n
+\end{coqout-right}
+
+Terminons par une dernière construction, quitte à laisser les détails de côté en première lecture:
+
+\begin{coq}[]
+Definition g1 : (forall n : nat, PP n -> PP n.+1) := fun (n : nat) (m : PP n) =>
+  match n return (PP n -> _) with
+  | 0 => fun _ => 1
+  | n'.+1 => fun m => m + n.+1
+  end m.
+
+Definition somme := nat_rec PP pudding g1.
+\end{coq}
+
+On observe les résultats suivants:
+
+\begin{coq-left}{name=a-trouver}{}
+Check gg.
+Check somme.
+Compute somme 4.
+Compute somme 0.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+: forall n : nat, PP n -> PP n.+1
+: forall n : nat, PP n
+= 10 : PP 4
+= pudding : PP 0
+\end{coqout-right}
+
+Bien sûr, on pourrait également écrire:
+
+\begin{coq-left}{name=a-trouver}{}
+Definition somme_bis := f3 pudding g1.
+Compute somme_bis 10.
+Compute somme_bis 0.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+
+= 55 : PP 10
+= pudding : PP 0
+\end{coqout-right}
+
+Les résultats produits par les fonctions \C{somme} et \C{somme_bis} sont identiques.  Dans la construction
+de \C{f3} on aurait pu introduire une quantification sur \C{PP}, en position initiale, pour retrouver la
+structure de \C{nat_rec}.
+
+\subsection{Une approche de Curry-Howard au travers un exemple}
+\label{sec:org517cdbc}
+La fonction inductive \C{nat_rec} est produite par \emph{Coq} au moment où le type inductif est construit.  Deux
+autres fonctions similaires sont également produites, il s'agit de \C{nat_ind} et \C{nat_rect}.  Comparons
+les types de ces fonctions:
+
+\begin{coqout}{}{}
+nat_rec
+     : forall P : nat -> Set,
+       P 0 -> (forall n : nat, P n -> P n.+1) -> forall n : nat, P n
+
+nat_ind
+     : forall P : nat -> Prop,
+       P 0 -> (forall n : nat, P n -> P n.+1) -> forall n : nat, P n
+
+nat_rect
+     : forall P : nat -> Type,
+       P 0 -> (forall n : nat, P n -> P n.+1) -> forall n : nat, P n
+\end{coqout}
+
+Ce qui distingue les trois fonctions est le type de du premier argument.  La fonction \C{nat_ind} n'est rien
+d'autre que la \textbf{fonction} qui permet d'établir, par récurrence, qu'une propriété est vraie sur les entiers.
+
+Bien que cela soit un peu précoce on peut mettre en œuvre un raisonnement par récurrence, précisément, par
+appel à la fonction \C{nat_ind}.  Voici l'énoncé qui va être prouvé: \C{forall n : nat, n + 0 = n}.  Pour
+alléger l'écriture, nous allons établir un lemme intermediaire (les détails de la preuve de ce lemme peuvent
+être omis en première lecture).
+
+\begin{coq}[]
+Lemma etape_heredite : forall n : nat, n + 0 = n -> n.+1 + 0 = n.+1.
+Proof.
+  move => n H.
+  have Hyp : n.+1 + 0 = (n + 0).+1 => //.
+  rewrite Hyp -[in RHS]H //.
+Qed.
+\end{coq}
+
+La preuve de notre énoncé consiste en l'appel de la fonction \C{Check nat_ind} avec les arguments suivants:
+\begin{itemize}
+\item \C{P := (fun n : nat => n + 0 = n) : nat -> Prop}, \C{P} est un prédicat sur les entiers;
+\item \C{(erefl 0) : 0 + 0 = 0} est le terme d'initialisation de la récurrence;
+\item \C{etape_heredite : forall n : nat, n + 0 = n -> n.+1 + 0 = n.+1} dont le nom est aussi explicite que le
+type\ldots{}
+\end{itemize}
+
+Il ne reste plus qu'à finaliser cela:
+
+\begin{coq}[]
+Lemma addition_0_neutre_a_droite: forall n : nat, n + 0 = n.
+Proof nat_ind (fun n : nat => n + 0 = n) (erefl 0) etape_heredite.
+\end{coq}
+
+\emph{Coq} semble satisfait.  Le \emph{terme} fourni dans la preuve est non seulement bien typé, le logiciel
+ne permet pas de circonvenir aux règles de typage, mais en plus le type obtenu est précisément celui
+qui définit l'énoncé du lemme.
+
+Au travers de cet exemple émergent les deux aspects indissociables de la correspondance de Curry-Howard:
+Une proposition est un type (\emph{propositions as types}) et la preuve de cette proposition est un programme
+(\emph{proofs as programs}) dont le type est donné par la proposition.
+
+Il va de soi que la preuve précédente présente deux aspects très discutables:
+\begin{itemize}
+\item d'une part l'écriture du terme \C{nat_ind ...} est quelque peu artificielle;
+\item d'autre part, la partie intéressante de la preuve s'est trouvée «externalisée» dans un autre énoncé.
+\end{itemize}
+
+Il reste que \emph{Coq} est également un \emph{assistant de preuve}.  Dorénavant, il s'agit de décrire des méthodes
+intelligibles pour la construction des preuves.  Voici comment se déroule la construction de la preuve
+précédente de manière moins artificielle:
+
+\begin{coq}[]
+Lemma lemme_addition_0_neutre_a_droite_bis : forall n : nat, n + 0 = n.
+Proof.
+  elim.
+  by [].
+  move => n HRec.
+  have HypSuppl : n.+1 + 0 = (n + 0).+1.
+    by [].
+  rewrite HypSuppl -[in RHS]HRec.
+  by [].
+Qed.
+\end{coq}
+
+Les informations utiles étant affichées par le logiciel, on peut les commenter.
+
+\textbf{Ligne 2}.  La commande \C{Proof} bascule dans le mode interactif de preuve.  Dès lors, nous sommes en
+présence d'un \emph{but}.  Un but est formé d'un contexte et d'une conclusion.  Le contexte regroupe les
+variables et les hypothèses disponibles alors que la conclusion indique ce qui doit être prouvé.  Au début
+de la preuve, la conclusion du but n'est rien d'autre que l'énoncé.
+
+\textbf{Ligne 3}.  La première étape de la preuve consiste en l'invocation de la tactique \C{elim}.  Cette tactique
+est celle qui met en place la récurrence.  Dans le cas présent deux nouveaux buts vont être ouverts.  Le
+premier est pour l'initialisation de la récurrence: son contexte est vide, sa conclusion est \C{0 + 0 = 0}.
+Le second but sera mis sur le métier lorsque le but courant sera clos.
+
+\textbf{Ligne 4}.  Pour clore, le but courant, on doit saisir un terme dont le type est \C{0 + 0 = 0}.  Or, le
+terme \C{erefl 0} admet le type souhaité.  On aurait pu écrire \C{exact: (erefl 0)}.  Toutefois, \emph{Coq} est
+assez aimable pour clore ce but de manière automatisée, ce que suggère le très bref \C{by []}.  \emph{Coq}
+bascule alors vers le second but dont la conclusion est: \C{forall n : nat, n + 0 = n -> n.+1 + 0 = n.+1}.
+
+\textbf{Ligne 5}.  On doit \emph{introduire} la variable \(n\) et l'hypothèse de récurrence \C{n + 0 = n} dans le contexte
+de la preuve ce que réalise la commande \C{move => n HRec}.  On observe que la conclusion du but devient
+\C{n.+1 + 0 = n.+1}.
+
+\textbf{Ligne 6}.  On se dit qu'il serait intéressant d'avoir une hypothèse supplémentaire.  On donne lui donne un
+nom et on écrit son énoncé.  Dès lors, le logiciel laisse de côté le but courant, et ouvre un but pour
+prouver cette hypothèse.
+
+\textbf{Ligne 7}.  Notre hypothèse est triviale (on verra pourquoi un peu plus loin).  La commande \C{by []} se
+charge de fermer ce but et de revenir au but qui a été mis en suspens.  L'hypothèse supplémentaire figure
+désormais dans le contexte.
+
+\textbf{Ligne 8}.  À cette étape, la conclusion est de la forme \C{n.+1 + 0 = n.+1}.  Dans cette égalité,
+remplaçons le terme \C{n.+1 + 0} par \C{(n + 0).+1}.  La réécriture via l'égalité \C{HypSuppl} vise cet
+objectif.  Provisoirement, la conclusion devient \C{(n + 0).+1 = n.+1}.  Dans le membre de droite de cette
+égalité, on remplace le terme \C{n} par \C{n + 0}.  La réécriture via l'égalité donnée par l'hypothèse de
+récurrence (de droite vers la gauche) vise cet objectif.  À l'issue de cette double réécriture, la
+conclusion du but est \C{(n + 0).+1 = (n + 0).+1}.
+
+\textbf{Ligne 9}.  La conclusion du but courant étant une égalité entre deux termes identiques, elle peut être
+\emph{déchargée}.  À nouveau, le très bref \C{by []} remplit cette fonction.  Un message apparait avec un contenu
+explicite: \emph{No more goals}.
+
+\textbf{Ligne 10}.  Il est temps d'invoquer la fin de la preuve avec la commande \C{Qed} (pour \emph{Quod erat
+demonstrandum}).  Le logiciel synthétise alors l'ensemble de la preuve en un terme qui est du type souhaité.
+Si on saisit la commande \C{Print lemme_addition_0_neutre_a_droite_bis} alors ce terme est affiché.  À des
+ajustement près, on reconnait dans ce qui affiché la structure du terme qui a été produit dans la version
+initiale de l'énoncé.
+
+\paragraph*{Remarque 1.}
+\label{sec:org648d147}
+Avec un peu de pratique, la preuve ci-dessus aurait pu être écrite sur une ligne:
+
+\begin{coq}[]
+Lemma lemme_addition_0_neutre_a_droite_ter : forall n : nat, n + 0 = n.
+Proof.
+  by elim => [//| n HRec]; rewrite -[in RHS]HRec addSn.
+Qed.
+\end{coq}
+
+\paragraph*{Remarque 2.}
+\label{sec:orga575213}
+Considérons l'énoncé jumeau:
+\begin{coq}[]
+Lemma lemme_addition_0_neutre_a_gauche : forall n : nat, 0 + n = n.
+Proof.
+  by [].
+Qed.
+\end{coq}
+
+Nos deux lemmes sont de faux jumeaux.  Celui que l'on vient d'écrire est trivial.  En effet, par
+construction de la fonction d'addition lorsque le premier argument est nul, la valeur renvoyée est égale au
+second argument.  On dit que le terme \C{n + 0} est convertible en \C{n}.  Dans la logique de \emph{Coq} deux
+termes convertibles peuvent se substituer l'un à l'autre.  Cet énoncé se ramène donc à à la proposition
+triviale: \C{forall n : nat, n = n}.
+
+Nous avons rencontré une situation similaire dans la justification de \C{HypSuppl : n.+1 + 0 = (n + 0).+1}.
+Par construction de la fonction d'addition, lorsque le premier argument est de la forme \C{n+.1} et que le
+deuxième argument est \C{n2} alors la valeur renvoyée est \C{(n + n2).+1}.  Ainsi le terme \C{n.+1 + 0} est
+convertible en \C{(n + 0).+1}.  Cela éclaire le caractère trivial de la justification.
+
+\subsection{\emph{Coq} et ses tactiques}
+\label{sec:org33b785e}
+On prolonge la section précédente par un examen des tactiques disponibles dans le cours de la production
+d'une preuve.  Si leur nombre est restreint, il convient de souligner que les modalités de leurs
+utilisations sont variées. Ici, le choix retenu est de décrire le fonctionnement de ces tactiques dans le
+cadre particulier, celui de l'extension \emph{ssreflect}, qui diffère du cadre pur \emph{Coq}.
+
+
+\subsubsection{La tactique \emph{move}}
+\label{sec:org97e189e}
+Une preuve comporte généralement des «transferts» de termes entre la conclusion du but et le contexte, dans
+un sens comme dans l'autre.  La tactique \C{move} réalise ces transferts.  De manière plus précise,
+lorsqu'on bascule un terme de la conclusion vers le contexte, on parle d'\emph{introduction} et l'utilisation
+d'un terme dans le contexte qui affecte la conclusion est qualifiée d'\emph{élimination}.
+
+Partons d'un exemple issu de la logique propositionnelle.  Rappelons que la notation flèche désigne autant
+une fonction qu'une implication.
+
+\begin{coq}[]
+Lemma lemme_transitivite_implication : forall P Q R: Prop, (P -> Q) -> (Q -> R) -> P -> R.
+Proof.
+  move => P Q R H1 H2 p.
+  exact: (H2 (H1 p)).
+Qed.
+\end{coq}
+
+Pour démarrer la preuve il faut commencer par \emph{introduire} dans le contexte du but les variables \(P\), \(Q\),
+\(R\), les hypothèses \C{P -> Q} et \C{Q -> R}.  La commande \C{move => P Q R H1 H2} réaliserait ce transfert
+vers le contexte.  Suite à cette opération, la conculsion serait \C{P -> R}.  Comme, il est clair, que l'on
+a besoin de composer les implications \C{H1} et \C{H2}, il est également nécessaire d'introduire dans le
+contexte un élément dont le type est \C{P}.  Voici à quoi ressemble le but après la validation de la ligne
+3:
+
+\begin{coqout}{}{}
+
+1 goal (ID 780)
+
+  P, Q, R : Prop
+  H1 : P -> Q
+  H2 : Q -> R
+  p : P
+  ============================
+  R
+\end{coqout}
+
+On verra un peu plus bas que la tactique \emph{apply:} réalise l'élimination de l'implication.  D'autres exemples
+en lien avec la logique propositionnelle articulent ces deux tactiques.
+
+\subsubsection{La tactique \emph{exact:}}
+\label{sec:org4148ae2}
+Comme on a pu le voir, lorsqu'on est en mesure d'anticiper sur un terme dont le type répond à ce qui figure
+dans la conclusion, on emploie la tactique \C{exact:} avec le terme idoine en argument.  La modalité
+d'utilisation de cette tactique est réduite à cette unique situation.
+
+\subsubsection{La tactique \emph{case}}
+\label{sec:org43ed394}
+Cette tactique est en charge de la déconstruction d'un terme.  Par exemple, lorsqu'on dispose d'une variable
+booléenne, on peut souhaiter la déconstruire pour obtenir deux sous-buts: l'un dans lequel cette variable
+prend la valeur \C{true} et l'autre dans lequel elle prend la valeur \C{false}.  Voici un exemple:
+
+\begin{coq}[]
+Lemma lemme_tautologie_boolenne : forall b1 b2: bool, (b1 || b2) && b1 == b1.
+Proof.
+  move => b1 b2.
+  case b1.
+    by [].
+  case b2.
+    by [].
+    by [].
+Qed.
+\end{coq}
+
+À la ligne 3, on élimine la quantification universelle par la tactique \C{move}.  La conclusion du but
+devient alors \C{(b1 || b2) && b1 == b1}.  On décide de \emph{déconstruire} la variable \C{b1}.  Compte-tenu de
+la définition du type booléen, on va obtenir deux sous-buts qui correspondent chacun à l'un des
+constructeurs de ce type.  À cette étape, l'interface de la preuve ressemble alors à ceci:
+
+\begin{coqout}{}{}
+  2 goals (ID 788)
+
+  b2 : bool
+  ============================
+  (true || b2) && true == true
+
+goal 2 (ID 789) is:
+ (false || b2) && false == false
+\end{coqout}
+
+Par calcul le terme \C{(true || b2) && true == true} est réduit à \C{true == true}
+(ici il s'agit de l'égalité booléenne).  Ce sous-but est clos.  Le suivant admet pour conclusion
+\C{(false || b2) && false == false}.  Or, tant que la valeur de \C{b2} est indéterminée, ce terme n'est pas
+réductible, d'où la nécessité de déconstruire ce terme.  Ensuite, les deux sous-buts produits ne comportent
+que des constantes, ils sont donc réductibles par calcul.
+
+\subsubsection{La tactique \emph{apply:}}
+\label{sec:org754004a}
+Reprenons l'énoncé sur la transitivité de l'implication propositionnelle.  Dans la preuve précédente, après
+l'introduction des variables propositionnelles, des implications \C{H1 : P -> Q}, \C{H2 : Q -> R} et de la
+variable \C{p : P}, on a procédé par présentation d'un terme dont le type répondait exactement à la
+conclusion.  On aurait pu faire autrement en \emph{appliquant} les implications.  On dit également qu'on élimine
+ces \emph{implications}.
+
+
+\begin{coq}[]
+Lemma lemme_transitivite_implication_bis : forall P Q R: Prop, (P -> Q) -> (Q -> R) -> P -> R.
+Proof.
+  move => P Q R H1 H2 p.
+  apply: H2.
+  apply: H1.
+  by [].
+Qed.
+\end{coq}
+
+À la ligne 3, l'invocation de l'implication \C{H2 : Q -> R} transforme la conclusion du but en \C{Q}.
+À la ligne 4, l'invocation de l'implication \C{H1 : P -> Q} transforme la conclusion du but en \C{P}. Or,
+dans le contexte de la preuve, il existe un terme \C{p:P}.  Cela est détecté par la commande finale
+\C{by []}.
+
+Il existe une autre situation dans laquelle le recours à la tactique \C{apply:} s'impose.  Lorsqu'il s'agit
+d'avancer dans une étape de la preuve en invoquant un énoncé disponible dans le contexte courant.  Voici un
+exemple qui fait appel à un énoncé disponible dans la bibliotheque initialement chargée:
+
+\begin{coq-left}{name=a-trouver}{}
+Check leq_mul.
+\end{coq-left}
+\hfill
+\begin{coqout-right}
+: forall [m1 m2 n1 n2 : nat], m1 <= n1 -> m2 <= n2 -> m1 * m2 <= n1 * n2
+\end{coqout-right}
+
+\begin{coq}[]
+Lemma lemme_renversant_01 : forall p1 p2: nat, p1 <= 3 -> 4 <= p2 -> p1 * 4 <= 3 * p2.
+Proof.
+  move => p1 p2 H1 H2.
+  apply: leq_mul.
+  by [].
+  by [].
+Qed.
+\end{coq}
+
+Dans cet exemple, la tactique \C{apply: leq_mul} peut être invoquée car le terme disponible dans la
+conclusion \C{4 <= p2 -> p1 * 4 <= 3 * p2} est une spécialisation du terme \C{m1 * m2 <= n1 * n2}.  \emph{Coq}
+ouvre deux sous buts dont les conclusions correspondent aux spécialisations de \C{m1 <= n1} et \C{m2 <= n2}.
+
+Dans cet exemple, la preuve aurait pu être écrite de manière plus concise en:
+
+\begin{coq}[]
+Lemma lemme_renversant_01_bis : forall p1 p2: nat, p1 <= 3 -> 4 <= p2 -> p1 * 4 <= 3 * p2.
+Proof.
+  move => p1 p2.
+  apply: leq_mul.
+Qed.
+\end{coq}
+
+\emph{Coq} est assez habile pour effectuer la spécialisation de \C{m1 <= n1 -> m2 <= n2 -> m1 * m2 <= n1 * n2}.
+Toutefios, l'unification des types des différents termes fait que si l'énoncé est légèrement modifié alors
+preuve initiale ne s'applique plus en l'état:
+
+\begin{coq}[]
+Lemma lemme_renversant_01_hic : forall p1 p2: nat, p1 <= 3 -> 4 <= p2 -> 4 * p1 <= 3 * p2.
+Proof.
+  move => p1 p2 H1 H2.
+  apply: leq_mul.
+\end{coq}
+
+L'interface de la preuve donne ceci:
+
+\begin{coqout}{}{}
+  2 goals (ID 973)
+
+  p1, p2 : nat
+  H1 : p1 <= 3
+  H2 : 3 < p2
+  ============================
+  3 < 3
+
+goal 2 (ID 974) is:
+ p1 <= p2
+\end{coqout}
+
+Il ne sera pas évident de prouver que \C{3 < 3}\ldots{}  La rectification passe bien sûr par un recours
+\emph{explicite} à réécriture liée à la propriété de commutativité de la multiplication des entiers:
+
+\begin{coq}[]
+Lemma lemme_renversant_01_hic_corrige : forall p1 p2: nat, p1 <= 3 -> 4 <= p2 -> 4 * p1 <= 3 * p2.
+Proof.
+  move => p1 p2 H1 H2.
+  rewrite mulnC. (* transforme "4 * p1" en "p1 * 4" *)
+  by apply: leq_mul.
+Qed.
+\end{coq}
+
+\subsubsection{La tactique \emph{elim}}
+\label{sec:orge503283}
+La tactique \C{elim} met en place un raisonnment par induction.  Il faut pour cela que le terme de tête dans
+la conclusion soit une variable mais cette variable n'est pas nécessairement du type entier.  Pa exemple, il
+ext possible de recourir à cette tactique sur une variable de type booléen.  Dans ce dernier cas, cela
+revient à une déconstruction, telle que celle opérée par la tactique \emph{case}.  Reprenons
+
+\begin{coq}[]
+Lemma lemme_tautologie_boolenne_bis : forall b1 b2: bool, (b1 || b2) && b1 == b1.
+Proof.
+  move => b1 b2.
+  elim: b1.
+  by [].
+  by elim b2.
+Qed.
+\end{coq}
+
+La pseudo tactique \C{by} peut être placée en position initiale lorsque la tactique qui vient après produit
+des buts triviaux.
+
+\subsubsection{La tactique \emph{rewrite}}
+\label{sec:org5075ac2}
+Comme son nom l'indique, cette tactique effectue une réécriture.  Lorsque l'on dispose d'un terme qui est
+une égalité, \C{Egalite: x = y}, on peut substituer, dans la conclusion, la première occurence de \C{x} par
+\C{y} à l'aide de la commande \C{rewrite Egalite}.  On peut substituer, la première occurence de \C{y} par
+\C{x} à l'aide de la commande \C{rewrite -Egalite}.  Si on souhaite que toutes les occurences de \C{x}
+soient remplacées par \C{y} alors la syntaxe est rewrite\{!Egalite\}.  Le mécanisme de réécriture est assez
+souple pour être appliqué dans un motif particulier dans la conclusion.
+
+Par exeemple dans le code rencontré auparavant, on avait:
+\begin{coq}[]
+Lemma etape_heredite : forall n : nat, n + 0 = n -> n.+1 + 0 = n.+1.
+Proof.
+  move => n H.
+  have Hyp : n.+1 + 0 = (n + 0).+1 => //.
+  rewrite Hyp -[in RHS]H //.
+Qed.
+\end{coq}
+
+L'hypothèse de récurrence est l'égalité \C{H: n + 0 = n}.  La syntaxe montre que la réécriture par cette
+hypothèse est effectuée dans le membre de droite.  En réalité, la notion de réécriture couvre un champ qui
+dépasse celui des égalités mais cela est hors de propos.
+
+
+\section{Points qui auraient dûs être abordés\ldots{}}
+\label{sec:orgf03a7e4}
+
+Les notions de conjonction, de disjonction et de négation propositionnelles.
+
+La notion de quantification existentielle.
+
+La différence entre logique classique et logique intuistionniste.
+
+La soustraction sur les entiers naturels et les relations d'ordre boolénnes qui en découlent.
+
+Et surtout, donner de vraies preuves, comme celle-ci (emprunté à A. Mahboubi et E. Tassi):
+
+\begin{coq}[]
+Inductive ex2 A P Q : Prop := ex_intro2 x of P x & Q x.
+Notation "exists2 x , p & q" := (ex2 (fun x => p) (fun x => q)).
+
+Notation "n `!" := (factorial n).
+
+(* Lemmes utilises ....
+
+Lemma fact_gt0 n : 0 < n`!.
+Lemma dvdn_fact m n : 0 < m <= n -> m %| n`!.
+Lemma pdivP n : 1 < n -> exists2 p, prime p & p %| n,
+Lemma dvdn_addr m d n : d %| m -> (d %| m + n) = (d %| n).
+Lemma gtnNdvd n d : 0 < n -> n < d -> (d %| n) = false.
+
+*)
+
+Lemma prime_above m : exists2 p, m < p & prime p.
+Proof.
+have /pdivP[p pr_p p_dv_m1]: 1 < m`! + 1.
+  by rewrite addn1 ltnS fact_gt0.
+exists p => //; rewrite ltnNge; apply: contraL p_dv_m1 => p_le_m.
+by rewrite dvdn_addr ?dvdn_fact ?prime_gt0 // gtnNdvd ?prime_gt1.
+Qed.
+\end{coq}
+
+\section{Exercices}
+\label{sec:org9789b69}
+Comment résister à la tentation de donner des exercices?
+
+\subsection{Autour de la logique booléenne}
+\label{sec:org446b01a}
+Prouver les énoncés suivants:
+
+\begin{coq}[]
+Lemma distributive_boolenne_1 : forall a b c : bool, a && (b || c) ==> (a && b) || (a && c).
+Proof.
+  Admitted.
+
+Lemma distributive_boolenne_2 : forall a b c : bool, a || (b && c) ==> (a || b) && (a || c).
+Proof.
+  Admitted.
+\end{coq}
+
+\subsection{Autour de la logique propositionnelle minimale}
+\label{sec:orgce87edb}
+Prouver les énoncés suivants:
+
+\begin{coq}[]
+Lemma imp_dist : forall P Q R : Prop,  (P -> Q -> R) -> (P -> Q) -> P -> R.
+Proof.
+Admitted.
+
+Lemma imp_trans : forall P Q R : Prop, (P -> Q) -> (Q -> R) -> P -> R.
+Proof.
+Admitted.
+
+Lemma imp_perm : forall P Q R : Prop, (P -> Q -> R) -> Q -> P -> R.
+Proof.
+Admitted.
+
+Lemma ignore_Q : forall P Q R : Prop,  (P -> R) -> P -> Q -> R.
+Proof.
+Admitted.
+
+Lemma delta_imp : forall P Q : Prop, (P -> P -> Q) -> P -> Q.
+Proof.
+Admitted.
+
+Lemma delta_impR : forall P Q : Prop, (P -> Q) -> P -> P -> Q.
+Proof.
+Admitted.
+
+Lemma diamond : forall P Q R : Prop, (P -> Q) -> (P -> R) -> (Q -> R -> S) -> P -> S.
+Proof.
+Admitted.
+
+Lemma weak_peirce : forall P Q : Prop, ((((P -> Q) -> P) -> P) -> Q) -> Q.
+Proof.
+Admitted.
+\end{coq}
+
+\subsection{Autour des entiers naturels}
+\label{sec:orgebe9f30}
+Prouver les énoncés suivants:
+
+\begin{coq}[]
+Lemma exo_01 : forall n1 n2 : nat, n1 + n2 = n2 + n1.
+Proof.
+Admitted.
+
+Lemma exo_02 : forall n1 n2 m3: nat, n1 + n2 + n3 = n1 + (n2 + n3).
+Proof.
+Admitted.
+
+Lemma exo_03 : forall n1 n2: nat, n1 + n2 + n3 = n1 + (n2 + n3).
+Proof.
+Admitted.
+
+Lemma exo_04 : forall n1 : nat, n1 * 0 = 0.
+Proof.
+Admitted.
+
+Lemma exo_05 : forall n1 n2 : nat, n1 * n2.+1 = n1 * n2 + n2.
+Proof.
+Admitted.
+
+Lemma exo_06 : forall n1 n2 n3 : nat, n1 * (n2 + n3) = n1 * n2 + n1 * n3.
+Proof.
+Admitted.
+
+Lemma exo_07 : forall n1 n2 : nat, n1 * n2 = n2 * n1.
+Proof.
+Admitted.
+
+Lemma exo_08 : forall n1 n2 n3 : nat, (n1 + n2) * n3 = n1 * n3 + n2 * n3.
+Proof.
+Admitted.
+\end{coq}
+
+\subsubsection{Énoncés de la logique intuistionniste}
+\label{sec:orgac7b395}
+Prouver des énoncer comme:
+
+\begin{coq}[]
+Lemma and_assoc : P /\ (Q /\ R) -> (P /\ Q) /\ R.
+Proof.
+Admitted.
+
+Lemma and_imp_dist : (P -> Q) /\ (R -> S) -> P /\ R -> Q /\ S.
+Proof.
+Admitted.
+
+Lemma not_contrad :  ~(P /\ ~P).
+Proof.
+Admitted.
+
+Lemma or_and_not : (P \/ Q) /\ ~P -> Q.
+Proof.
+Admitted.
+
+Lemma not_not_exm : ~ ~ (P \/ ~ P).
+Proof.
+Admitted.
+
+Lemma de_morgan_1 : ~(P \/ Q) -> ~P /\ ~Q.
+Proof.
+Admitted.
+
+Lemma de_morgan_2 : ~P /\ ~Q -> ~(P \/ Q).
+Proof.
+Admitted.
+
+Lemma de_morgan_3 : ~P \/ ~Q -> ~(P /\ Q).
+Proof.
+Admitted.
+
+Lemma or_to_imp : P \/ Q -> ~ P -> Q.
+Proof.
+Admitted.
+
+Lemma imp_to_not_not_or : (P -> Q) -> ~ ~(~P \/ Q).
+Proof.
+Admitted.
+\end{coq}
+
+\subsubsection{Énoncés de la logique classique}
+\label{sec:org78ee7af}
+\begin{coq}[]
+Context (tiers_exclus : forall P : Prop, P \/ ~P).
+
+Lemma de_morgan_4 : ~(P /\ Q) -> ~P \/ ~Q.
+Proof.
+Admitted.
+\end{coq}
+
+\subsubsection{Énoncés autour de la surjectivité et de la surjectivité des fonctions}
+\label{sec:org06217fd}
+
+\begin{coq}[]
+Section CompositionSurjectiviteEtInjectivite.
+Variables (f g : nat -> nat).
+Hypothesis gf_surjective : forall (c : nat), exists a:nat, g (f a) = c.
+Hypothesis gf_injective : forall (x y : nat),  g (f x) = g (f y) -> x = y.
+
+Lemma g_surjective : forall c : nat, exists b:nat, g b = c.
+Proof.
+Admitted.
+
+Lemma f_injective : forall x y : nat, f x = f y -> x = y.
+Proof.
+Admitted.
+
+Check g_surjective.
+Check f_injective.
+End CompositionSurjectiviteEtInjectivite.
+\end{coq}
+\end{document}
